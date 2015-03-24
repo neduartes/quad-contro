@@ -6,18 +6,20 @@ function [state_fut] = rotorDynamics(state, input, step)
     % state(4): pitch rate of change
     % state(5): yaw
     % state(6): yaw rate of change
-    Ix = 4;
-    Iy = 4;
-    Iz = 16;
-    Prop_inertia = 1;
-    drag = 0.0005;
-    arm = 0.15;
+    Ix = 8.1E-3;
+    Iy = 8.1E-3;
+    Iz = 14.2E-3;
+    Prop_inertia = 104E-6;
+    drag = 1.1E-6;
+    arm = 0.24;
     
     thrust = input .^ 2;
-    U1 = drag * arm * [ 0 -1  0 1] * thrust;
-    U2 = drag * arm * [ 1  0 -1 0] * thrust;
-    U3 = drag * arm * [-1  1 -1 1] * thrust;
-    U = [1 1 1 1] * thrust;
+    U1 = drag * arm * [ 0 -1 0 1] * thrust;
+    U2 = drag * arm * [-1  0 1 0] * thrust;
+    U3 = drag * arm * [ 1 -1 1 -1] * thrust;
+    U = [-1 1 -1 1] * thrust;
+    
+    state_fut = zeros(6,1);
     
     state_fut(1) = state(1) + state(2) * step;
     state_fut(2) = state(2) + state(4) * state(6) * (Iy - Iz) * step / Ix + ...
