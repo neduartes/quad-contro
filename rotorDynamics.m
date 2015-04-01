@@ -10,13 +10,15 @@ function [state_fut] = rotorDynamics(state, input, step)
     Iy = 8.1E-3;
     Iz = 14.2E-3;
     Prop_inertia = 104E-6;
-    drag = 1.1E-6;
+    b = 54.2*10^(-6);  % Thrust factor
+    d = 1.1*10^(-6);  % Drag factor
     arm = 0.24;
-    
+
+
     thrust = input .^ 2;
-    U1 = drag * arm * [ 0 -1 0 1] * thrust;
-    U2 = drag * arm * [-1  0 1 0] * thrust;
-    U3 = drag * arm * [ 1 -1 1 -1] * thrust;
+    U1 = b * arm * [ 0 -1 0 1] * thrust;
+    U2 = b * arm * [-1  0 1 0] * thrust;
+    U3 = d * arm * [ 1 -1 1 -1] * thrust;
     U = [-1 1 -1 1] * thrust;
     
     state_fut = zeros(6,1);
