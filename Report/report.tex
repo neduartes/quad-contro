@@ -2,7 +2,10 @@
  
 \title{Attitude control of miniature quadrotor}
 \author{Nestor A Eduartes}
+
 \usepackage[top=1in, bottom=1.25in, left=1.25in, right=1.25in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
  
 \begin{document}
  
@@ -22,6 +25,7 @@ The orientation of the quadrotor depends on the relationship of the speed of the
 It is clear that a precise control of the four motors is required to achieve a stable operation and control of the position and attitude of the quadrotor structure. In the following sections the dynamic model of the quadrotor is presented, and a brief survey on control strategies is exposed. Two classical strategies are developed and compared.
 
 \section{Quadrotor dynamic model}
+\label{sec:dynamics}
 The dynamic model for the quadrotor is taken from \cite{Boua04}. This dynamic model is particularly interesting since it includes the gyroscopic effects to which the structure is subject due to the action of the propeller's rotation. This aspects are particularly interesting since the dynamics of the model will be simulated to assess the control strategies.
 
 The dynamic of the quadrotor can be described using its coordinates on an earth fixed frame, together with the orientation of the structure in space. This model representation yields 12 states comprising: 3 position coordinates, and their rates of change; and 3 Euler angles, and ther rates of changes. The Euler angles are defined by the following convention: \emph{roll} $\phi$, as the rotation around the x-axis; \emph{pitch} $\theta$, as the rotation around the y-axis; and \emph{yaw} $\psi$, as the rotation around the z-axis. The configuration of the quadrotor is shown in Figure X.
@@ -55,7 +59,7 @@ The model for the attitude dynamics of the quadrotor is the following:
 \ddot{\psi} = \dot{\phi} \dot{\theta} \left ( \frac{I_x-I_y}{I_z} \right ) + \frac{1}{I_z} U_3
 \end{equation}
 
-Where each constant for our case of study are shown in Table \ref{tab:parameters}. These parameters are taken from \cite{Merh14} :
+Where each constant for our case of study are shown in Table~\ref{tab:parameters}. These parameters are taken from \cite{Merh14} :
 
 \begin{table}
   \begin{center}
@@ -76,27 +80,130 @@ Where each constant for our case of study are shown in Table \ref{tab:parameters
   \end{center}
 \end{table}
 
-\section{Linearized Controller}
+\section{Control architecture}
+One common control architecture comprises a hierarchical control of the quadrotor dynamics. This hierarchical scheme comprises an inner control loop, consisting of the attitude control of the quadrotor, together with an outer loop, controlling the translational dynamics of the quadrotor \cite{Raff10}. This architecture allows a greater flexibility in the development of the control modules. This scheme allows the manual operation of the quadrotor by an operator, subsitituting the outer control loop. The outer loop reference signals can be generated from a mission control system, responsible of computing the desired trajectory.
 
-\section{Pole Placement Controller Design}
+This hierarchical structure allows us to work on the attitude control in an independent manner without a loss in generality.
 
-The key performance index for the pole placement design are defined based on the results in \cite{Boua04}. The identified key performance indexes are shown in Table \ref{tab:KPI}.
+\subsection{Model Linearization}
+The linear system for (\ref{eq:dyn-roll} - \ref{eq:dyn-yaw}) can be calculated through the first-order Taylor series expansion around $\left (\bar{x},\bar{u} \right )$, such that this is an equilibrium point.
+
+\begin{equation}
+\dot{x} = f(x(t)) + g(u(t))
+\end{equation}
+
+\begin{equation}
+\delta x := x(t) - \bar{x}
+\end{equation}
+
+\begin{equation}
+\delta u := u(t) - \bar{u}
+\end{equation}
+
+\begin{equation}
+\dot{x} = f(\bar{x}) + g(\bar{u}) = 0
+\end{equation}
+
+Then the linear model around the equilibrium point can be calculated using the first-order Taylor series expansion.
+
+\begin{equation}
+\label{eq:linearization}
+\Delta\dot{x}(t) \approx  \tilde{A} \, \Delta x(t) + \tilde{B} \, \Delta u(t) + \epsilon (t)
+\end{equation}
+
+\begin{equation}
+\label{eq:jacobian-f}
+\tilde{A} = \left \frac{\partial f(x)} {\partial x} \right|_{\begin{smallmatrix} x = \bar{x} \\ u = \bar{u} \end{smallmatrix}} = \begin{bmatrix}
+\frac{\partial f_1(\mathbf{x})}{\partial x_1} & \cdots & \frac{\partial f_1(\mathbf{x})}{\partial x_n} \\
+\vdots & \ddots & \vdots \\
+\frac{\partial f_n(\mathbf{x})}{\partial x_1} & \cdots & \frac{\partial f_n(\mathbf{x})}{\partial x_n}
+\end{bmatrix}
+\end{equation}
+
+\begin{equation}
+\label{eq:jacobian-g}
+\tilde{B} = \left \frac{\partial g(u)} {\partial u} \right|_{u = \bar{u}} = \begin{bmatrix}
+\frac{\partial g_1(\mathbf{x})}{\partial x_1} & \cdots & \frac{\partial g_1(\mathbf{x})}{\partial x_m} \\
+\vdots & \ddots & \vdots \\
+\frac{\partial g_n(\mathbf{x})}{\partial x_1} & \cdots & \frac{\partial g_n(\mathbf{x})}{\partial x_m}
+\end{bmatrix} \\
+\end{equation}
+
+Where $\tilde{A}$ and $\tilde{B}$ are the Jacobians of the nonlinear functions $f(x)$ and $g(u)$.
+
+\subsection{Quadrotor linearized model}
+
+$$ \tilde{A} = 
+{\left \begin{bmatrix}
+0 & 1 & 0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & \dot{\psi} \left (\frac{I_y - I_z}{I_x} \right ) - \frac{J}{I_x} \Omega & 0 & \dot{\theta} \left (\frac{I_y - I_z}{I_x} \right ) \\ 
+0 & 0 & 0 & 1 & 0 & 0 \\ 
+0 & \dot{\psi} \left (\frac{I_z - I_x}{I_y} \right ) + \frac{J}{I_y} \Omega & 0 & 0 & 0 & \dot{\phi} \left (\frac{I_z - I_x}{I_y} \right ) \\ 
+0 & 0 & 0 & 0 & 0 & 1 \\ 
+0 & \dot{\theta} \left (\frac{I_x - I_y}{I_z} \right ) & 0 & \dot{\phi} \left (\frac{I_x - I_y}{I_z} \right ) & 0 & 0
+\end{bmatrix} \right |}_{\begin{smallmatrix} x = 0 \\ u = \bar{u} \end{smallmatrix}} $$
+
+\begin{equation}
+\tilde{A} = 
+\begin{bmatrix}
+0 & 1 & 0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & -\frac{J}{I_x} \Omega_o & 0 & 0 \\ 
+0 & 0 & 0 & 1 & 0 & 0 \\ 
+0 & \frac{J}{I_y} \Omega_o & 0 & 0 & 0 & 0 \\ 
+0 & 0 & 0 & 0 & 0 & 1 \\ 
+0 & 0 & 0 & 0 & 0 & 0
+\end{bmatrix}
+\end{equation}
+
+\begin{equation}
+\tilde{A} = 
+\begin{bmatrix}
+0 & 0 & 0 \\ 
+\frac{l}{I_x} & 0 & 0 \\
+0 & 0 & 0 \\ 
+0 & \frac{l}{I_y} & 0 \\
+0 & 0 & 0 \\ 
+0 & 0 & \frac{l}{I_z}
+\end{bmatrix}
+\end{equation}
+
+\section{Controller Design}
+
+Two different linear approaches are evaluated in the following sections. These are a State Feedback Controller design by pole placement technique, and a Linear Quadratic Optimal Controller.
+
+\subsection{State Feedback Controller}
+\label{sec:state-feedback}
+
+The state feedback controller is designed using the linearized state space representation of the system. To generate the feedback control law $K$ for the closed loop system, the key performance indexes for the dynamic response is propossed. The objective of this controller is to replicate the results found in \cite{Boua04} for the PID controller design. Therefore, the key performance indexes are evaluated from the results found for the PID controller. The identified key performance indexes are shown in Table~\ref{tab:KPI}.
+
+
 
 \begin{table}
   \begin{center}
-    \caption{Key performance index}\label{tab:KPI}
+    \caption{Key performance index}
+    \label{tab:KPI}
     \begin{tabular}{rlr}
       \hline
       Symbol & Index & Value \\
       \hline                  
       $T_s$ & Settling time & $1$ [sec]\\
-      $%OS$ & Percentage Overshot & $10%$\\
+      $\%OS$ & Percentage Overshot & $10\%$\\
       \hline
     \end{tabular}
   \end{center}
 \end{table}
 
 \section{Linear Quadratic Regulator}
+
+\section{System simulation}
+A Simulink block performing the nonlinear dynamic model described in section~\ref{sec:dynamics} was created. Two control strategies were performed to control de dynamics of the quadrotor. Figure~\ref{fig:simulink} shows the State Feedback Regulator designed in section~\ref{sec:state-feedback}.
+
+\begin{figure}[b]
+  \centering
+  \includegraphics[width=0.7\textwidth]{Simulink.png}
+  \caption{Simulink model.}
+  \label{fig:model}
+\end{figure}
  
 \begin{thebibliography}{100} % 100 is a random guess of the total number of
 \bibitem{Merh14} Merheb A., Noura H., and Bateman F., (2014)
@@ -112,6 +219,10 @@ The key performance index for the pole placement design are defined based on the
 \bibitem{Cabe14} Cabecinhas D., Cunha R., and Silvestre C., (2014),
 ``A nonlinear quadrotor trajectory tracking controller with disturbance rejection".
 \emph{Journal Control Engineering Practice}, Volume 26, (pp. 1–10).
+
+\bibitem{Raff10} Raffo G., Ortega M., and Rubio F., (2010)
+``An integral predictive/nonlinear $\mathcal{H} _\infty$ control structure for a quadrotor helicopter"
+\emph{Journal Automatica}, Volume 46, (pp. 29-39)
 \end{thebibliography}
 
 \end{document}
