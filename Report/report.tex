@@ -42,24 +42,30 @@ The dynamic model is derived using Euler-Lagrange mecanical formulation under th
 
 This assumptions allows us to represent the object by its inertia matrix, and a point mass at the center of gravity. The assumption of symmetry allows to assume that the inertia matrix is diagonal, further simplifying the model. Since the objective of this project is to evaluate the control strategies for the attitude control of the quadrotor, the translational dynamics are not considered. 
 
-The model for the attitude dynamics of the quadrotor is the following:
+The model for the attitude dynamics of the quadrotor are given by:
 
 \begin{equation}
-\label{eq:dyn-roll}
-\ddot{\phi} = \dot{\theta} \dot{\psi} \left ( \frac{I_y-I_z}{I_x} \right ) - \frac{J}{I_x} \dot{\theta} \Omega + \frac{l}{I_x} U_1
+  \label{eq:dynamics}
+  \begin{split}
+    \ddot{\phi} &= \dot{\theta} \dot{\psi} \left ( \frac{I_y-I_z}{I_x} \right ) - \frac{J}{I_x} \dot{\theta} \Omega + \frac{l}{I_x} U_1 \\
+    \ddot{\theta} &= \dot{\phi} \dot{\psi} \left ( \frac{I_z-I_x}{I_y} \right ) + \frac{J}{I_y} \dot{\phi} \Omega + \frac{l}{I_y} U_2 \\
+    \ddot{\psi} &= \dot{\phi} \dot{\theta} \left ( \frac{I_x-I_y}{I_z} \right ) + \frac{1}{I_z} U_3
+  \end{split}
 \end{equation}
+
+The control inputs are related to the rotor speeds are given by:
 
 \begin{equation}
-\label{eq:dyn-pitch}
-\ddot{\theta} = \dot{\phi} \dot{\psi} \left ( \frac{I_z-I_x}{I_y} \right ) + \frac{J}{I_y} \dot{\phi} \Omega + \frac{l}{I_y} U_2
+  \label{eq:inputs}
+  \begin{split}
+  U_1 &= b \left (\Omega^2_4 - \Omega^2_2 \right ) \\
+  U_2 &= b \left (\Omega^2_3 - \Omega^2_1 \right ) \\
+  U_3 &= d \left (\Omega^2_1 + \Omega^2_3 - \Omega^2_2 - \Omega^2_4 \right ) \\
+  \Omega &= \Omega^2_1 + \Omega^2_2 + \Omega^2_3 + \Omega^2_4
+  \end{split}
 \end{equation}
 
-\begin{equation}
-\label{eq:dyn-yaw}
-\ddot{\psi} = \dot{\phi} \dot{\theta} \left ( \frac{I_x-I_y}{I_z} \right ) + \frac{1}{I_z} U_3
-\end{equation}
-
-Where each constant for our case of study are shown in Table~\ref{tab:parameters}. These parameters are taken from \cite{Merh14} :
+Where each constant for our case of study are shown in Table~\ref{tab:parameters}. These parameters are taken from \cite{Merh14}:
 
 \begin{table}
   \begin{center}
@@ -93,7 +99,7 @@ This hierarchical structure allows us to work on the attitude control in an inde
 \end{figure}
 
 \subsection{Model Linearization}
-The linear system for (\ref{eq:dyn-roll} - \ref{eq:dyn-yaw}) can be calculated through the first-order Taylor series expansion around $\left (\bar{x},\bar{u} \right )$, such that this is an equilibrium point.
+The linear system for (\ref{eq:dynamics}) can be calculated through the first-order Taylor series expansion around $\left (\bar{x},\bar{u} \right )$, such that this is an equilibrium point.
 
 \begin{equation}
 \dot{x} = f(x(t)) + g(u(t))
@@ -174,6 +180,40 @@ $$ \tilde{A} =
 \end{bmatrix}
 \end{equation}
 
+The linearization of the control input given the rotor speed can be found in an analogous way.
+
+\begin{equation}
+  \label{eq:controls}
+  \begin{bmatrix}
+  U_1 \\ U_2 \\ U_3 \\ \Omega
+  \end{bmatrix} = \mathbf{M}
+  \begin{bmatrix}
+  \Omega_1 \\ \Omega_2 \\ \Omega_3 \\ \Omega_4
+  \end{bmatrix},\quad \mathbf{M} = 2\Omega_o
+  \begin{bmatrix}
+  0 & -b & 0 & b \\ 
+  -b & 0 & b & 0 \\ 
+  d & -d & d & -d \\
+  1 & 1 & 1 & 1
+  \end{bmatrix}
+\end{equation}
+
+By including the constrain $ \Sigma = 0$, we can assure that the attitude control inputs will not change the total thrust on the quadrotor. Under this assumption, then $ \mathbf{M} $ is invertible, and we can construct the mapping for the speed control given the desired control input vector $ \begin{bmatrix} U_1  & U_2 & U_3 & 0\end{bmatrix}^\mathrm{T} $.
+
+\begin{equation}
+    \begin{bmatrix}
+    \Omega_1 \\ \Omega_2 \\ \Omega_3 \\ \Omega_4
+    \end{bmatrix} = 
+    \mathbf{M}^{-1} \begin{bmatrix} U_1 \\ U_2 \\ U_3 \\ 0 \end{bmatrix},\quad
+    \mathbf{M}^{-1} = \frac{1}{2 \Omega_o}
+    \begin{bmatrix}
+    0 & -\frac{1}{2b} & \frac{1}{4d} & \frac{1}{4} \\ 
+    -\frac{1}{2b} & 0 & -\frac{1}{4d} & \frac{1}{4} \\ 
+    0 & \frac{1}{2b} & \frac{1}{4d} & \frac{1}{4} \\
+    \frac{1}{2b} & 0 & -\frac{1}{4d} & \frac{1}{4}
+    \end{bmatrix}
+\end{equation}
+
 \section{Controller Design}
 
 Two different linear approaches are evaluated in the following sections. These are a State Feedback Controller design by pole placement technique, and a Linear Quadratic Optimal Controller.
@@ -230,6 +270,26 @@ A Simulink block performing the nonlinear dynamic model described in section~\re
   \includegraphics[width=0.7\textwidth]{Simulink.png}
   \caption{Simulink model.}
   \label{fig:model}
+\end{figure}
+
+\section{Results}
+
+\subsection{State feedback controller}
+
+\begin{figure}
+  \centering
+  \includegraphics{state-feedback.pdf}
+  \caption{System response for initial states $\mathbf{x} = \begin{bmatrix} 1.2 & -0.1 & 0.65 & 0.1 & 0.5 & 0 \end{bmatrix}^\mathrm{T} $.}
+  \label{fig:res-sf}
+\end{figure}
+
+\subsection{Linear Quadratic Regulator Controller}
+
+\begin{figure}
+  \centering
+  \includegraphics{lqg.pdf}
+  \caption{System response for initial states $\mathbf{x} = \begin{bmatrix} 1.2 & -0.1 & 0.65 & 0.1 & 0.5 & 0 \end{bmatrix}^\mathrm{T} $.}
+  \label{fig:control}
 \end{figure}
 
 \section{Appendix A: Systems matrixes}
