@@ -30,7 +30,7 @@ The dynamic model for the quadrotor is taken from \cite{Boua04}. This dynamic mo
 
 The dynamic of the quadrotor can be described using its coordinates on an earth fixed frame, together with the orientation of the structure in space. This model representation yields 12 states comprising: 3 position coordinates, and their rates of change; and 3 Euler angles, and ther rates of changes. The Euler angles are defined by the following convention: \emph{roll} $\phi$, as the rotation around the x-axis; \emph{pitch} $\theta$, as the rotation around the y-axis; and \emph{yaw} $\psi$, as the rotation around the z-axis. The configuration of the quadrotor is shown in Figure X.
 
-The dynamic model is derived using Euler-Lagrange mecanical formulation under the following assumptions:
+The dynamic model is derived using Euler-Lagrange mecanical formulation under the following assumptions \cite{Boua04}:
 
 \begin{itemize}
 \item The structure is assumed as rigid.
@@ -99,52 +99,46 @@ This hierarchical structure allows us to work on the attitude control in an inde
 \end{figure}
 
 \subsection{Model Linearization}
+\label{sec:linearization}
 The linear system for (\ref{eq:dynamics}) can be calculated through the first-order Taylor series expansion around $\left (\bar{x},\bar{u} \right )$, such that this is an equilibrium point.
 
 \begin{equation}
-\dot{x} = f(x(t)) + g(u(t))
+  \begin{split}
+    \dot{x}(t) &= f(x(t)) + g(u(t)) \\
+    \Delta x(t) &:= x(t) - \bar{x} \\
+    \Delta u(t) &:= u(t) - \bar{u} \\
+    \bar{\dot{x}}(t) &= f(\bar{x}) + g(\bar{u}) = 0
+  \end{split}
 \end{equation}
+
+Then the linear model around the equilibrium point can be calculated using the first-order Taylor series expansion. Where $\tilde{A}$ and $\tilde{B}$ are the Jacobians of the nonlinear functions $f(x)$ and $g(u)$, and $\epsilon (t)$ is the error due to the terms of second order and higher.
 
 \begin{equation}
-\delta x := x(t) - \bar{x}
+  \begin{split}
+    \label{eq:linearization}
+    \Delta\dot{x}(t) &\approx  \tilde{A} \, \Delta x(t) + \tilde{B} \, \Delta u(t) + \epsilon (t) \\
+    \tilde{A} &= \left. \frac{ \partial f(x)} {\partial x} \right|_{\begin{smallmatrix} x = \bar{x} \\ u = \bar{u} \end{smallmatrix}} = \begin{bmatrix}
+    \frac{\partial f_1(\mathbf{x})}{\partial x_1} & \cdots & \frac{\partial f_1(\mathbf{x})}{\partial x_n} \\
+    \vdots & \ddots & \vdots \\
+    \frac{\partial f_n(\mathbf{x})}{\partial x_1} & \cdots & \frac{\partial f_n(\mathbf{x})}{\partial x_n}
+    \end{bmatrix} \\
+    \tilde{B} &= \left. \frac{\partial g(u)} {\partial u} \right|_{u = \bar{u}} = \begin{bmatrix}
+    \frac{\partial g_1(\mathbf{x})}{\partial x_1} & \cdots & \frac{\partial g_1(\mathbf{x})}{\partial x_m} \\
+    \vdots & \ddots & \vdots \\
+    \frac{\partial g_n(\mathbf{x})}{\partial x_1} & \cdots & \frac{\partial g_n(\mathbf{x})}{\partial x_m}
+    \end{bmatrix} \\
+  \end{split}
 \end{equation}
-
-\begin{equation}
-\delta u := u(t) - \bar{u}
-\end{equation}
-
-\begin{equation}
-\dot{x} = f(\bar{x}) + g(\bar{u}) = 0
-\end{equation}
-
-Then the linear model around the equilibrium point can be calculated using the first-order Taylor series expansion.
-
-\begin{equation}
-\label{eq:linearization}
-\Delta\dot{x}(t) \approx  \tilde{A} \, \Delta x(t) + \tilde{B} \, \Delta u(t) + \epsilon (t)
-\end{equation}
-
-\begin{equation}
-\label{eq:jacobian-f}
-\tilde{A} = \left. \frac{ \partial f(x)} {\partial x} \right|_{\begin{smallmatrix} x = \bar{x} \\ u = \bar{u} \end{smallmatrix}} = \begin{bmatrix}
-\frac{\partial f_1(\mathbf{x})}{\partial x_1} & \cdots & \frac{\partial f_1(\mathbf{x})}{\partial x_n} \\
-\vdots & \ddots & \vdots \\
-\frac{\partial f_n(\mathbf{x})}{\partial x_1} & \cdots & \frac{\partial f_n(\mathbf{x})}{\partial x_n}
-\end{bmatrix}
-\end{equation}
-
-\begin{equation}
-\label{eq:jacobian-g}
-\tilde{B} = \left. \frac{\partial g(u)} {\partial u} \right|_{u = \bar{u}} = \begin{bmatrix}
-\frac{\partial g_1(\mathbf{x})}{\partial x_1} & \cdots & \frac{\partial g_1(\mathbf{x})}{\partial x_m} \\
-\vdots & \ddots & \vdots \\
-\frac{\partial g_n(\mathbf{x})}{\partial x_1} & \cdots & \frac{\partial g_n(\mathbf{x})}{\partial x_m}
-\end{bmatrix} \\
-\end{equation}
-
-Where $\tilde{A}$ and $\tilde{B}$ are the Jacobians of the nonlinear functions $f(x)$ and $g(u)$.
 
 \subsection{Quadrotor linearized model}
+
+The quadrotor has an equilibrium point at hover. That is $ x(t) = 0 $. By performing the linearization process described in Section \ref{sec:linearization}, we can find a description of the quadrotor dynamics near the hover position as:
+
+\begin{equation}
+  \begin{split}
+    \Omega_o = \sqrt{\frac{mg}{4b}} = \sqrt{\frac{\left( 1 kg \right) \times \left( 9.8m/s^2 \right)}{4 \times \left (2.017\times 10^{-5} \right )}} = 212.61 rev/sec
+  \end{split}
+\end{equation}
 
 $$ \tilde{A} = 
 {\left. \begin{bmatrix}
@@ -198,7 +192,7 @@ The linearization of the control input given the rotor speed can be found in an 
   \end{bmatrix}
 \end{equation}
 
-By including the constrain $ \Sigma = 0$, we can assure that the attitude control inputs will not change the total thrust on the quadrotor. Under this assumption, then $ \mathbf{M} $ is invertible, and we can construct the mapping for the speed control given the desired control input vector $ \begin{bmatrix} U_1  & U_2 & U_3 & 0\end{bmatrix}^\mathrm{T} $.
+By including the constrain $ \Omega = 0 $, we can assure that the attitude control inputs will not change the total thrust on the quadrotor. Under this assumption, then $ \mathbf{M} $ is invertible, and we can construct the mapping for the speed control given the desired control input vector $ \begin{bmatrix} U_1  & U_2 & U_3 & 0\end{bmatrix}^\mathrm{T} $.
 
 \begin{equation}
     \begin{bmatrix}
@@ -291,6 +285,22 @@ A Simulink block performing the nonlinear dynamic model described in section~\re
   \caption{System response for initial states $\mathbf{x} = \begin{bmatrix} 1.2 & -0.1 & 0.65 & 0.1 & 0.5 & 0 \end{bmatrix}^\mathrm{T} $.}
   \label{fig:control}
 \end{figure}
+
+\begin{table}
+  \begin{center}
+    \caption{Key performance index}
+    \label{tab:KPI}
+    \begin{tabular}{rlr}
+      \hline
+      Symbol & Index & Value \\
+      \hline                  
+      $T_s$ & Settling time & $1$ [sec]\\
+      $\%OS$ & Percentage Overshot & $10\%$\\
+      \hline
+    \end{tabular}
+  \end{center}
+\end{table}
+
 
 \section{Appendix A: Systems matrixes}
 
