@@ -1,21 +1,30 @@
 figure(1)
 
 subplot(3,1,1)
-plot(time, output.signals.values(:,1),'-b');
-xlabel('Time [sec]')
-axis([0 5 -2 2])
+plot(time, 180 * output.signals.values(:,1) / pi ,'-b');
+xlabel('Time [sec]', 'FontName', 'Latin Modern Roman', 'FontSize', 10)
+ylabel('Roll [deg]', 'FontName', 'Latin Modern Roman', 'FontSize', 10)
+set(gca, 'FontName', 'Latin Modern Roman', 'FontSize', 10);
+axis([0 15 -75 75])
+set(gca,'ytick',[-90:30:90])
 grid on
 
 subplot(3,1,2)
-plot(time, output.signals.values(:,3),'-r');
-xlabel('Time [sec]')
-axis([0 5 -2 2])
+plot(time, 180 * output.signals.values(:,3) / pi,'-r');
+xlabel('Time [sec]', 'FontName', 'Latin Modern Roman', 'FontSize', 10)
+ylabel('Pitch [deg]', 'FontName', 'Latin Modern Roman', 'FontSize', 10)
+set(gca, 'FontName', 'Latin Modern Roman', 'FontSize', 10);
+axis([0 15 -75 75])
+set(gca,'ytick',[-90:30:90])
 grid on
 
-subplot(3,1,1)
-plot(time, output.signals.values(:,5),'-g');
-xlabel('Time [sec]')
-axis([0 5 -2 2])
+subplot(3,1,3)
+plot(time, 180 * output.signals.values(:,5) / pi,'-g');
+xlabel('Time [sec]', 'FontName', 'Latin Modern Roman', 'FontSize', 10)
+ylabel('Yaw [deg]', 'FontName', 'Latin Modern Roman', 'FontSize', 10)
+set(gca, 'FontName', 'Latin Modern Roman', 'FontSize', 10);
+axis([0 5 -45 45])
+set(gca,'ytick',[-90:30:90])
 grid on
 
 figure(2)
